@@ -66,6 +66,7 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                     return;
                 }
                 addConnection(destination, output, input);
+                return destination;
             }
         },
         "disconnect": {
@@ -83,7 +84,7 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                     return new DOMException("IndexSizeError");
                 }
                 if (checkForConnection(destination, output, input) === false) {
-                    return;
+                    throw ("InvalidAccessError: A parameter of an operation is not supported by the underlying object")
                 }
                 removeConnection(destination, output, input);
             }
@@ -161,7 +162,7 @@ var AudioParam = function (defaultValue, minValue, maxValue) {
         },
         "cancelScheduledValues": {
             "value": function (t) {
-                if (t === undefined || ()) {
+                if (t === undefined) {
                     throw ("TypeError: Not enough arguments to AudioParam.cancelScheduledValues.");
                 }
                 if (typeof t != "number") {
@@ -266,7 +267,7 @@ var AudioContext = function (sampleRate) {
                 }
             }
         },
-        "createGainNode": {
+        "createGain": {
             "value": function () {
                 return new GainNode(this);
             }
