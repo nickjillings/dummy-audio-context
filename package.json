@@ -1,0 +1,12 @@
+{
+    "name": "dummy-audio-context",
+    "description": "Dummy Web Audio API",
+    "author": "Nick Jillings",
+    "version": "0.0.1",
+    "devDependencies": {
+        "jshint": "^2.6.0"
+    },
+    "scripts": {
+        "test": "mocha"
+    }
+}
