@@ -65,7 +65,7 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                         return new Error("Not from the same audio context");
                     }
                 } else {
-                    throw ("Not an AudioNode or AudioParam")
+                    throw ("Not an AudioNode or AudioParam");
                 }
 
                 if (output < 0 || output > numberOfOutputs) {
@@ -102,8 +102,9 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
         },
         "connectedTo": {
             "value": function (node) {
-                for (var i = 0; i < connectionMap.length; i++) {
-                    var a = connectionMap[i];
+                var i, a;
+                for (i = 0; i < connectionMap.length; i++) {
+                    a = connectionMap[i];
                     if (a.destination === node || a.destination.node === node) {
                         return true;
                     } else {
@@ -226,6 +227,263 @@ var AudioParam = function (node, defaultValue, minValue, maxValue) {
     });
 };
 
+var GainNode = function (context) {
+    AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
+    var gain = new AudioParam(this, 1.0, -Infinity, +Infinity);
+    Object.defineProperties(this, {
+        "gain": {
+            "value": gain
+        }
+    });
+};
+
+var DelayNode = function (context, maxDelayTime) {
+    if (maxDelayTime === undefined || typeof maxDelayTime !== "number" || maxDelayTime <= 0) {
+        maxDelayTime = Infinity;
+    }
+    AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
+    var delayTime = new AudioParam(this, 0, 0, maxDelayTime);
+    Object.defineProperties(this, {
+        "delayTime": {
+            "value": delayTime
+        }
+    });
+};
+
+var AudioBuffer = function (context, numberOfChannels, length, sampleRate) {
+    var data = new Float32Array(sampleRate * length * numberOfChannels);
+    Object.defineProperties(this, {
+        "sampleRate": {
+            "value": sampleRate
+        },
+        "length": {
+            "value": length
+        },
+        "numberOfChannels": {
+            "value": numberOfChannels
+        },
+        "duration": {
+            "value": length / sampleRate
+        },
+        "copyFromChannel": {
+            "value": function (destination, channelNumber, startInChannel) {
+                if (destination.constructor !== Float32Array) {
+                    throw ("Destination must be a Float32Array");
+                }
+                if (typeof channelNumber !== "number" || channelNumber < 0 || channelNumber !== Math.floor(channelNumber)) {
+                    throw ("Channel number not an integer");
+                }
+                if (channelNumber >= numberOfChannels) {
+                    return new DOMException("IndexSizeError");
+                }
+                if (startInChannel === undefined) {
+                    startInChannel = 0;
+                }
+                if (startInChannel >= length || startInChannel < 0 || startInChannel !== Math.floor(startInChannel)) {
+                    throw ("startInChannel not correct");
+                }
+                var N = math.min(length - startInChannel, destination.length);
+                for (var i = 0; i < N; i++) {
+                    destination[i] = data[channelNumber * length + startInChannel + i];
+                }
+            }
+        },
+        "copyToChannel": {
+            "value": function (source, channelNumber, startInChannel) {
+                if (source.constructor !== Float32Array) {
+                    throw ("Destination must be a Float32Array");
+                }
+                if (typeof channelNumber !== "number" || channelNumber < 0 || channelNumber !== Math.floor(channelNumber)) {
+                    throw ("Channel number not an integer");
+                }
+                if (channelNumber >= numberOfChannels) {
+                    return new DOMException("IndexSizeError");
+                }
+                if (startInChannel === undefined) {
+                    startInChannel = 0;
+                }
+                if (startInChannel >= length || startInChannel < 0 || startInChannel !== Math.floor(startInChannel)) {
+                    throw ("startInChannel not correct");
+                }
+                var N = math.min(length - startInChannel, source.length);
+                for (var i = 0; i < N; i++) {
+                    data[channelNumber * length + startInChannel + i] = source[i];
+                }
+            }
+        },
+        "getChannelData": {
+            "value": function (channelNumber) {
+                var ar = new Float32Array(length);
+                for (var i = 0; i < length; i++) {
+                    ar[i] = data[channelNumber * length + i];
+                }
+                return ar;
+            }
+        }
+    });
+};
+
+var AudioBufferSourceNode = function (context) {
+    var loop = false,
+        detune = new AudioParam(this, 0, -1200, +1200),
+        playbackRate = new AudioParam(this, 1, -Infinity, Infinity),
+        loopStart = undefined,
+        loopEnd = undefined,
+        buffer = null,
+        onended = undefined,
+        state = 0;
+    AudioNode.call(this, context, context.destination.numberOfChannels, 0, 1);
+    Object.defineProperties(this, {
+        "detune": {
+            "value": detune
+        },
+        "playbackRate": {
+            "value": playbackRate
+        },
+        "buffer": {
+            "get": function () {
+                return buffer;
+            },
+            "set": function (b) {
+                if (b === null || b.constructor === AudioBuffer) {
+                    buffer = b;
+                }
+                loopStart = 0;
+                loopEnd = buffer.duration;
+                return buffer;
+            }
+        },
+        "loop": {
+            "get": function () {
+                return loop;
+            },
+            "set": function (s) {
+                if (s === true) {
+                    loop = true;
+                } else {
+                    loop = false;
+                }
+                return loop;
+            }
+        },
+        "loopStart": {
+            "get": function () {
+                return loopStart;
+            },
+            "set": function (t) {
+                if (typeof t !== "number") {
+                    throw ("Value is not a number");
+                }
+                var m = 0;
+                t = Math.max(t, 0);
+                t = Math.min(t, buffer.duration);
+                loopStart = Math.floor(t * buffer.sampleRate);
+                return loopStart / buffer.sampleRate;
+            }
+        },
+        "loopEnd": {
+            "get": function () {
+                return loopStart;
+            },
+            "set": function (t) {
+                if (typeof t !== "number") {
+                    throw ("Value is not a number");
+                }
+                var m = 0;
+                t = Math.max(t, 0);
+                t = Math.min(t, buffer.duration);
+                loopEnd = Math.floor(t * buffer.sampleRate);
+                return loopEnd / buffer.sampleRate;
+            }
+        },
+        "onended": {
+            "get": function () {
+                return onended;
+            },
+            "set": function (f) {
+                if (typeof f === "function") {
+                    onended = f;
+                }
+                return onended;
+            }
+        },
+        "start": {
+            "value": function (when, offset, duration) {
+                if (buffer === null) {
+                    throw ("No buffer");
+                }
+                if (state !== 0) {
+                    throw ("Cannot call .start multiple times");
+                }
+                if (when === undefined) {
+                    when = 0;
+                }
+                if (offset === undefined) {
+                    offset = 0;
+                }
+                if (duration === undefined) {
+                    duration = buffer.duration;
+                }
+                state = 1;
+            }
+        },
+        "stop": {
+            "value": function (when) {
+                if (buffer === null) {
+                    throw ("No buffer");
+                }
+                if (state === 0) {
+                    throw ("Has not been started");
+                }
+                if (when === undefined) {
+                    when = 0;
+                }
+                state = 2;
+                onended();
+            }
+        }
+    });
+};
+
+var ScriptProcessorNode = function (context, bufferSize, inputChannels, outputChannels) {
+    AudioNode.call(this, Math.max(inputChannels, outputChannels), 1, 1);
+    var AudioProcessingEvent = function (context, bufferSize, inputChannels, outputChannels) {
+        Object.defineProperties(this, {
+            "inputBuffer": {
+                "value": context.createBuffer(inputChannels, bufferSize, context.sampleRate)
+            },
+            "outputBuffer": {
+                "value": context.createBuffer(outputChannels, bufferSize, context.sampleRate)
+            },
+            "playbackTime": {
+                "value": context.currentTime
+            }
+        });
+    };
+
+    var onaudioprocess = null;
+    Object.defineProperties(this, {
+        "onaudioprocess": {
+            "get": function () {
+                return onaudioprocess
+            },
+            "set": function (f) {
+                if (typeof f === "function") {
+                    onaudioprocess = f;
+                }
+                return onaudioprocess;
+            }
+        },
+        "process": {
+            "value": function () {
+                if (onaudioprocess) {
+                    onaudioprocess.call(this, new AudioProcessingEvent(context, bufferSize, inputChannels, outputChannels));
+                }
+            }
+        }
+    });
+}
+
 var AudioContext = function (sampleRate) {
     var state = "suspended",
         destination = new AudioNode(this, 2, 1, 0),
@@ -328,29 +586,21 @@ var AudioContext = function (sampleRate) {
             "value": function () {
                 return new DelayNode(this);
             }
-        }
-    });
-};
-
-var GainNode = function (context) {
-    AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
-    var gain = new AudioParam(this, 1.0, -Infinity, +Infinity);
-    Object.defineProperties(this, {
-        "gain": {
-            "value": gain
-        }
-    });
-};
-
-var DelayNode = function (context, maxDelayTime) {
-    if (maxDelayTime === undefined || typeof maxDelayTime !== "number" || maxDelayTime <= 0) {
-        maxDelayTime = Infinity;
-    }
-    AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
-    var delayTime = new AudioParam(this, 0, 0, maxDelayTime);
-    Object.defineProperties(this, {
-        "delayTime": {
-            "value": delayTime
+        },
+        "createBuffer": {
+            "value": function (numberOfChannels, length, sampleRate) {
+                return new AudioBuffer(this, numberOfChannels, length, sampleRate);
+            }
+        },
+        "createBufferSource": {
+            "value": function () {
+                return new AudioBufferSourceNode(this);
+            }
+        },
+        "createScriptProcessor": {
+            "value": function (bufferSize, numberOfInputChannels, numberOfOutputChannels) {
+                return new ScriptProcessorNode(this, bufferSize, numberOfInputChannels, numberOfOutputChannels);
+            }
         }
     });
 };

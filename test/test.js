@@ -226,7 +226,7 @@ describe("Connections", function () {
         a.connect(b);
         b.connect(c);
         it("a should have 1 connection", function (done) {
-            assert.ok(a.getDestinations().length, 1);
+            assert.equal(a.getDestinations().length, 1);
             done();
         });
         it("a should be connected to b", function (done) {
@@ -234,7 +234,7 @@ describe("Connections", function () {
             done();
         });
         it("b should have 1 connection", function (done) {
-            assert.ok(b.getDestinations().length, 1);
+            assert.equal(b.getDestinations().length, 1);
             done();
         });
         it("b should be connected to c", function (done) {
@@ -242,7 +242,7 @@ describe("Connections", function () {
             done();
         });
         it("c should have 0 connections", function (done) {
-            assert.ok(c.getDestinations().length, 0);
+            assert.equal(c.getDestinations().length, 0);
             done();
         });
         it("a should be connected to c", function (done) {
@@ -314,6 +314,136 @@ describe("Nodes", function () {
         });
         it("delayTime should have a value of 0", function (done) {
             assert.ok(node.delayTime.value === 0);
+            done();
+        });
+    });
+    describe("AudioBuffer", function () {
+        var c = 2,
+            l = 1024,
+            s = 48000,
+            node;
+        it("context.createBuffer should return a buffer", function (done) {
+            node = context.createBuffer(c, l, s);
+            assert.ok(node.constructor === sandbox.AudioBuffer);
+            done();
+        });
+        it("should have " + c + " channels", function (done) {
+            assert.equal(node.numberOfChannels, c);
+            done();
+        });
+        it("should have " + l + " samples", function (done) {
+            assert.equal(node.length, l);
+            done();
+        });
+        it("should have a sampleRate of " + s, function (done) {
+            assert.equal(node.sampleRate, s);
+            done();
+        });
+        it("should have a duration of " + (l / s) + " seconds", function (done) {
+            assert.equal(node.duration, l / s);
+            done();
+        });
+        it("should have .copyFromChannel", function (done) {
+            assert.ok(typeof node.copyFromChannel === "function");
+            done();
+        });
+        it("should have .copyToChannel", function (done) {
+            assert.ok(typeof node.copyToChannel === "function");
+            done();
+        });
+        it("should have .getChannelData", function (done) {
+            assert.ok(typeof node.getChannelData === "function");
+            done();
+        });
+    });
+    describe("AudioBufferSource", function () {
+        var c = 2,
+            l = 1024,
+            s = 48000,
+            buffer = context.createBuffer(c, l, s),
+            node;
+        it("context.createBufferSource should return an AudioBufferSource", function (done) {
+            node = context.createBufferSource();
+            assert.ok(node.constructor === sandbox.AudioBufferSourceNode);
+            done();
+        });
+        it("should have a detune parameter", function (done) {
+            assert.ok(node.detune.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have a playbackRate parameter", function (done) {
+            assert.ok(node.playbackRate.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should set the buffer using .buffer = buffer", function (done) {
+            node.buffer = buffer;
+            assert.ok(node.buffer === buffer);
+            done();
+        });
+        it("loop should be false", function (done) {
+            assert.ok(node.loop === false);
+            done();
+        });
+        it(".loop = true should be true", function (done) {
+            assert.ok(node.loop = true);
+            done();
+        });
+        it("loop should be true", function (done) {
+            assert.ok(node.loop === true);
+            done();
+        });
+        it(".loop = false should be false", function (done) {
+            assert.ok(node.loop = false === false);
+            done();
+        });
+        it("loopStart should be 0", function (done) {
+            assert.equal(node.loopStart, 0);
+            done();
+        });
+        it("loopStart less than 0 should be 0", function (done) {
+            node.loopStart = -1;
+            assert.equal(node.loopStart, 0);
+            done();
+        });
+        it("calling .start, .stop will trigger onended", function (done) {
+            function test() {
+                done();
+            }
+            node.onended = test;
+            node.start();
+            node.stop();
+        });
+        it("calling .start, .stop, .start will error", function (done) {
+            try {
+                node.start();
+            } catch (e) {
+                assert.ok(e);
+                done();
+            }
+        });
+    });
+    describe("ScriptProcessor", function () {
+        var b = 512,
+            i = 2,
+            o = 2,
+            node;
+        it("context.createScriptProcessor should create a ScriptProcessorNode", function (done) {
+            node = context.createScriptProcessor(b, i, o);
+            assert.ok(node.constructor === sandbox.ScriptProcessorNode);
+            done();
+        });
+        it("onaudioprocess should be null", function (done) {
+            assert.ok(node.onaudioprocess === null);
+            done();
+        });
+        it("should send an audio event to onaudioprocess when triggered", function (done) {
+            function test(e) {
+                assert.equal(e.playbackTime, context.currentTime);
+                assert.ok(e.inputBuffer.constructor === sandbox.AudioBuffer);
+                assert.ok(e.outputBuffer.constructor === sandbox.AudioBuffer);
+            }
+            node.onaudioprocess = test;
+            node.process();
             done();
         });
     });
