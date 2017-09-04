@@ -6,7 +6,7 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
 
     function checkForConnection(destination, output, input) {
         return (connectionMap.findIndex(function (e) {
-            return (e.destination == destination && e.output == output && e.input == input);
+            return (e.destination === destination && e.output === output && e.input === input);
         })) !== -1;
     }
 
@@ -20,9 +20,9 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
 
     function removeConnection(destination, output, input) {
         var i = connectionMap.findIndex(function (e) {
-            return (e.destination == destination && e.output == output && e.input == input);
+            return (e.destination === destination && e.output === output && e.input === input);
         });
-        connectionMap = connectionMap.splice(i, 1);
+        connectionMap.splice(i, 1);
     }
 
     Object.defineProperties(this, {
@@ -56,16 +56,27 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                 if (input === undefined) {
                     input = 0;
                 }
+                if (destination.context) {
+                    if (destination.context !== context) {
+                        return new Error("Not from the same audio context");
+                    }
+                } else if (destination.value) {
+                    if (destination.node.context !== context) {
+                        return new Error("Not from the same audio context");
+                    }
+                } else {
+                    throw ("Not an AudioNode or AudioParam")
+                }
+
                 if (output < 0 || output > numberOfOutputs) {
                     return new DOMException("IndexSizeError");
                 }
                 if (input < 0 || input > numberOfInputs) {
                     return new DOMException("IndexSizeError");
                 }
-                if (checkForConnection(destination, output, input) === true) {
-                    return;
+                if (checkForConnection(destination, output, input) === false) {
+                    addConnection(destination, output, input);
                 }
-                addConnection(destination, output, input);
                 return destination;
             }
         },
@@ -84,36 +95,77 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                     return new DOMException("IndexSizeError");
                 }
                 if (checkForConnection(destination, output, input) === false) {
-                    throw ("InvalidAccessError: A parameter of an operation is not supported by the underlying object")
+                    throw ("InvalidAccessError: A parameter of an operation is not supported by the underlying object");
                 }
                 removeConnection(destination, output, input);
+            }
+        },
+        "connectedTo": {
+            "value": function (node) {
+                for (var i = 0; i < connectionMap.length; i++) {
+                    var a = connectionMap[i];
+                    if (a.destination === node || a.destination.node === node) {
+                        return true;
+                    } else {
+                        if (a.destination !== context.destination && a.destination !== this) {
+                            if (a.destination.connectedTo) {
+                                if (a.destination.connectedTo(node)) {
+                                    return true;
+                                }
+                            } else if (a.destination.node.connectedTo) {
+                                if (a.destination.node.connectedTo(node)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        },
+        "getDestinations": {
+            "value": function () {
+                var list = [];
+                connectionMap.forEach(function (a) {
+                    list.push(a.destination);
+                });
+                return list;
             }
         }
     });
 };
 
-var AudioParam = function (defaultValue, minValue, maxValue) {
-    var _value = defaultValue;
+var AudioParam = function (node, defaultValue, minValue, maxValue) {
+    var value = defaultValue;
 
     function vt(v, t) {
         if (v === undefined || t === undefined) {
             throw ("Not enough arguments to AudioParam.setTargetAtTime.");
         }
-        if (typeof v != "number" || typeof t != "number") {
+        if (typeof v !== "number" || typeof t !== "number") {
             throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
         }
         return this;
     }
     Object.defineProperties(this, {
+        "node": {
+            "value": node
+        },
         "value": {
             "get": function () {
-                return _value;
+                return value;
             },
             "set": function (v) {
-                if (typeof v != "number") {
+                if (typeof v !== "number") {
                     throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
                 }
-                _value = v;
+                if (minValue) {
+                    v = Math.max(v, minValue);
+                }
+                if (maxValue) {
+                    v = Math.min(v, maxValue);
+                }
+                value = v;
                 return this.value;
             }
         },
@@ -135,18 +187,18 @@ var AudioParam = function (defaultValue, minValue, maxValue) {
         "exponentialRampToValueAtTime": {
             "value": vt
         },
-        "setTargetAtTime ": {
+        "setTargetAtTime": {
             "value": function (v, s, t) {
                 if (v === undefined || s === undefined || t === undefined) {
                     throw ("Not enough arguments to AudioParam.setTargetAtTime.");
                 }
-                if (typeof v != "number" || typeof s != "number" || typeof t != "number") {
+                if (typeof v !== "number" || typeof s !== "number" || typeof t !== "number") {
                     throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
                 }
                 return this;
             }
         },
-        "setValueCurveAtTime ": {
+        "setValueCurveAtTime": {
             "value": function (c, s, t) {
                 if (c === undefined || s === undefined || t === undefined) {
                     throw ("Not enough arguments to AudioParam.setTargetAtTime.");
@@ -154,7 +206,7 @@ var AudioParam = function (defaultValue, minValue, maxValue) {
                 if (c.constructor !== Float32Array) {
                     throw ("Argument 1 is not a Float32Array");
                 }
-                if (typeof s != "number" || typeof t != "number") {
+                if (typeof s !== "number" || typeof t !== "number") {
                     throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
                 }
                 return this;
@@ -165,7 +217,7 @@ var AudioParam = function (defaultValue, minValue, maxValue) {
                 if (t === undefined) {
                     throw ("TypeError: Not enough arguments to AudioParam.cancelScheduledValues.");
                 }
-                if (typeof t != "number") {
+                if (typeof t !== "number") {
                     throw ("TypeError: Argument 1 of AudioParam.cancelScheduledValues is not a finite floating-point value.");
                 }
                 return this;
@@ -175,79 +227,79 @@ var AudioParam = function (defaultValue, minValue, maxValue) {
 };
 
 var AudioContext = function (sampleRate) {
-    var _state = "suspended",
-        _destination = new AudioNode(this, 2, 1, 0),
-        _currentTime = 0,
-        _onstatechangecallback = function () {};
+    var state = "suspended",
+        destination = new AudioNode(this, 2, 1, 0),
+        currentTime = 0,
+        onstatechangecallback = function () {};
 
     function onstatechange() {
         var e = new Event();
-        _onstatechangecallback.call(e);
+        onstatechangecallback.call(e);
     }
 
-    if (sampleRate === undefined || typeof sampleRate != "number") {
+    if (sampleRate === undefined || typeof sampleRate !== "number") {
         sampleRate = 48000;
     }
 
     Object.defineProperties(this, {
         "state": {
             "get": function () {
-                return _state;
+                return state;
             }
         },
         "destination": {
-            "value": _destination
+            "value": destination
         },
         "sampleRate": {
             "value": sampleRate
         },
         "currentTime": {
             "get": function () {
-                return _currentTime;
+                return currentTime;
             }
         },
         "suspend": {
             "value": function () {
-                return Promise(function (resolve, reject) {
-                    _state = "suspended";
+                return new Promise(function (resolve, reject) {
+                    state = "suspended";
                     resolve();
                 });
             }
         },
         "resume": {
             "value": function () {
-                return Promise(function (resolve, reject) {
-                    _state = "running";
+                return new Promise(function (resolve, reject) {
+                    state = "running";
                     resolve();
                 });
             }
         },
         "close": {
             "value": function () {
-                return Promise(function (resolve, reject) {
-                    _state = "closed";
+                return new Promise(function (resolve, reject) {
+                    state = "closed";
                     resolve();
                 });
             }
         },
         "onstatechange": {
             "get": function () {
-                return _onstatechangecallback;
+                return onstatechangecallback;
             },
             "set": function (f) {
-                if (typeof f == "function") {
-                    f = _onstatechangecallback;
+                if (typeof f === "function") {
+                    f = onstatechangecallback;
                 }
-                return _onstatechangecallback;
+                return onstatechangecallback;
             }
         },
         "decodeAudioData": {
             "value": function (a, onsuccess, onerror) {
-                var e;
-                var f = new Float32Array(1024);
+                var f = new Float32Array(1024),
+                    e;
                 if (onsuccess === undefined && onerror === undefined) {
                     return new Promise(function (resolve, reject) {
-                        if (a.constructor != ArrayBuffer) {
+                        if (a.constructor !== ArrayBuffer) {
                             e = new DOMException('NotSupportedError');
                             reject(e);
                         } else {
@@ -255,7 +307,7 @@ var AudioContext = function (sampleRate) {
                         }
                     });
                 } else {
-                    if (a.constructor != ArrayBuffer) {
+                    if (a.constructor !== ArrayBuffer) {
                         e = new DOMException('NotSupportedError');
                         if (onerror) {
                             onerror(e);
@@ -271,16 +323,34 @@ var AudioContext = function (sampleRate) {
             "value": function () {
                 return new GainNode(this);
             }
+        },
+        "createDelay": {
+            "value": function () {
+                return new DelayNode(this);
+            }
         }
     });
 };
 
 var GainNode = function (context) {
     AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
-    var gain = new AudioParam(1.0, -Infinity, +Infinity);
+    var gain = new AudioParam(this, 1.0, -Infinity, +Infinity);
     Object.defineProperties(this, {
         "gain": {
             "value": gain
+        }
+    });
+};
+
+var DelayNode = function (context, maxDelayTime) {
+    if (maxDelayTime === undefined || typeof maxDelayTime !== "number" || maxDelayTime <= 0) {
+        maxDelayTime = Infinity;
+    }
+    AudioNode.call(this, context, context.destination.numberOfChannels, 1, 1);
+    var delayTime = new AudioParam(this, 0, 0, maxDelayTime);
+    Object.defineProperties(this, {
+        "delayTime": {
+            "value": delayTime
         }
     });
 };
