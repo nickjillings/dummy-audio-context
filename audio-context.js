@@ -1,4 +1,4 @@
-/*globals DOMException, Float32Array, Event, Promise, ArrayBuffer */
+/*globals DOMException, Float32Array, Event, Promise, ArrayBuffer, math */
 var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
     var connectionMap = [],
         channelCountMode = "max",
@@ -333,10 +333,10 @@ var AudioBufferSourceNode = function (context) {
     var loop = false,
         detune = new AudioParam(this, 0, -1200, +1200),
         playbackRate = new AudioParam(this, 1, -Infinity, Infinity),
-        loopStart = undefined,
-        loopEnd = undefined,
+        loopStart,
+        loopEnd,
         buffer = null,
-        onended = undefined,
+        onended,
         state = 0;
     AudioNode.call(this, context, context.destination.numberOfChannels, 0, 1);
     Object.defineProperties(this, {
@@ -471,7 +471,7 @@ var ScriptProcessorNode = function (context, bufferSize, inputChannels, outputCh
     Object.defineProperties(this, {
         "onaudioprocess": {
             "get": function () {
-                return onaudioprocess
+                return onaudioprocess;
             },
             "set": function (f) {
                 if (typeof f === "function") {
@@ -488,7 +488,7 @@ var ScriptProcessorNode = function (context, bufferSize, inputChannels, outputCh
             }
         }
     });
-}
+};
 
 var PannerNode = function (context) {
     var PannerCoordinates = function (x, y, z) {
@@ -499,7 +499,7 @@ var PannerNode = function (context) {
                 },
                 "set": function (v) {
                     if (typeof v != "number") {
-                        throw ("Non-finite argument passed")
+                        throw ("Non-finite argument passed");
                     }
                     x = v;
                     return x;
@@ -511,7 +511,7 @@ var PannerNode = function (context) {
                 },
                 "set": function (v) {
                     if (typeof v != "number") {
-                        throw ("Non-finite argument passed")
+                        throw ("Non-finite argument passed");
                     }
                     y = v;
                     return y;
@@ -523,14 +523,14 @@ var PannerNode = function (context) {
                 },
                 "set": function (v) {
                     if (typeof v != "number") {
-                        throw ("Non-finite argument passed")
+                        throw ("Non-finite argument passed");
                     }
                     z = v;
                     return z;
                 }
             }
-        })
-    }
+        });
+    };
     var panningModel = "equalpower",
         distanceModel = "inverse",
         coneInnerAngle = 360,
@@ -658,32 +658,38 @@ var PannerNode = function (context) {
                 return rolloffFactor;
             }
         },
-        "setOrientation": function (x, y, z) {
-            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
-                throw ("Invalid parameter types");
+        "setOrientation": {
+            "value": function (x, y, z) {
+                if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                    throw ("Invalid parameter types");
+                }
+                orientation.x = x;
+                orientation.y = y;
+                orientation.z = z;
             }
-            orientation.x = x;
-            orientation.y = y;
-            orientation.z = z;
         },
-        "setPosition": function (x, y, z) {
-            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
-                throw ("Invalid parameter types");
+        "setPosition": {
+            "value": function (x, y, z) {
+                if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                    throw ("Invalid parameter types");
+                }
+                position.x = x;
+                position.y = y;
+                position.z = z;
             }
-            position.x = x;
-            position.y = y;
-            position.z = z;
         },
-        "setVelocity": function (x, y, z) {
-            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
-                throw ("Invalid parameter types");
+        "setVelocity": {
+            "value": function (x, y, z) {
+                if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                    throw ("Invalid parameter types");
+                }
+                velocity.x = x;
+                velocity.y = y;
+                velocity.z = z;
             }
-            velocity.x = x;
-            velocity.y = y;
-            velocity.z = z;
         }
     });
-}
+};
 
 var AudioContext = function (sampleRate) {
     var state = "suspended",

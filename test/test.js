@@ -489,5 +489,49 @@ describe("Nodes", function () {
             assert.ok(node.constructor === sandbox.PannerNode);
             done();
         });
+        it("should have a panning model of \"equalpower\"", function (done) {
+            assert.equal(node.panningModel, "equalpower");
+            done();
+        });
+        it("should have a distance model of \"inverse\"", function (done) {
+            assert.equal(node.distanceModel, "inverse");
+            done();
+        });
+        it("should have coneInnerAngle", function (done) {
+            assert.ok(node.coneInnerAngle);
+            done();
+        });
+        it("should have coneOuterAngle", function (done) {
+            assert.ok(node.coneOuterAngle);
+            done();
+        });
+        it("should have coneOuterGain", function (done) {
+            assert.ok(node.coneOuterGain !== undefined);
+            done();
+        });
+        it("should have maxDistance", function (done) {
+            assert.ok(node.maxDistance);
+            done();
+        });
+        it("should have refDistance", function (done) {
+            assert.ok(node.refDistance);
+            done();
+        });
+        it("should have rolloffFactor", function (done) {
+            assert.ok(node.rolloffFactor);
+            done();
+        });
+        it("should have setOrientation", function (done) {
+            assert.ok(node.setOrientation);
+            done();
+        });
+        it("should have setPosition", function (done) {
+            assert.ok(node.setPosition);
+            done();
+        });
+        it("should have setVelocity", function (done) {
+            assert.ok(node.setVelocity);
+            done();
+        });
     });
 });
