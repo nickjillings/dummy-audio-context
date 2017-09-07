@@ -772,6 +772,137 @@ var ConvolverNode = function (context) {
     });
 };
 
+var AnalyserNode = function (context) {
+    AudioNode.call(this, context, 1, 1, 1);
+    var fftSize = 2048,
+        maxDecibels = -30,
+        minDecibels = -100,
+        smoothingTimeConstant = 0.8;
+
+    function getByteData(dst) {
+        if (dst.constructor !== Uint8Array) {
+            throw ("NotSupportedError");
+        }
+        var N = Math.min(dst.length, fftSize);
+        for (var n = 0; n < N; n++) {
+            dst[n] = Math.round(Math.random() * 255);
+        }
+    }
+
+    Object.defineProperties(this, {
+        "fftSize": {
+            "get": function () {
+                return fftSize;
+            },
+            "set": function (v) {
+
+                function ispow2(v) {
+                    var n = 1;
+                    while (n > n << 1) {
+                        if (Math.pow(2, n) === v) {
+                            return true;
+                        }
+                        n = n << 1;
+                    }
+                    return false;
+                }
+
+                if (typeof v != "number") {
+                    throw ("Not a finite number");
+                }
+                if (v < 32 || v > 32768) {
+                    throw ("Outside of bounds");
+                }
+                if (!ispow2(v)) {
+                    throw ("Not a power of 2");
+                }
+                fftSize = v;
+                return fftSize;
+            }
+        },
+        "frequencyBinCount": {
+            "get": function () {
+                return fftSize / 2;
+            },
+            "set": function (v) {
+                throw ("Cannot set readonly variable");
+            }
+        },
+        "maxDecibels": {
+            "get": function () {
+                return maxDecibels;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Not a finite number");
+                }
+                if (v <= minDecibels) {
+                    throw ("IndexSizeError");
+                }
+                maxDecibels = v;
+                return maxDecibels;
+            }
+        },
+        "minDecibels": {
+            "get": function () {
+                return minDecibels;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Not a finite number");
+                }
+                if (v >= maxDecibels) {
+                    throw ("IndexSizeError");
+                }
+                minDecibels = v;
+                return minDecibels;
+            }
+        },
+        "smoothingTimeConstant": {
+            "get": function () {
+                return smoothingTimeConstant;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Not a finite number");
+                }
+                if (v < 0 || v > 1) {
+                    throw ("IndexSizeError");
+                }
+                smoothingTimeConstant = v;
+                return smoothingTimeConstant;
+            }
+        },
+        "getByteFrequencyData": {
+            "value": getByteData
+        },
+        "getByteTimeDomainData": {
+            "value": getByteData
+        },
+        "getFloatFrequencyData": {
+            "value": function (dst) {
+                if (dst.constructor !== Float32Array) {
+                    throw ("NotSupportedError");
+                }
+                var N = Math.min(dst.length, this.frequencyBinCount);
+                for (var n = 0; n < N; n++) {
+                    dst[n] = minDecibels + (Math.random() * (maxDecibels - minDecibels));
+                }
+            }
+        },
+        "getFloatTimeDomainData": {
+            "value": function (dst) {
+                if (dst.constructor !== Float32Array) {
+                    throw ("NotSupportedError");
+                }
+                var N = Math.min(dst.length, this.fftSize);
+                for (var n = 0; n < N; n++) {
+                    dst[n] = -1 + (Math.random() * 2);
+                }
+            }
+        }
+    });
+};
 
 var AudioContext = function (sampleRate) {
     var state = "suspended",
