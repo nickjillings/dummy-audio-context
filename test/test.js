@@ -59,6 +59,22 @@ describe("Statics", function () {
             assert.ok(typeof context.createDelay == "function");
             done();
         });
+        it("should have a .createPanner()", function (done) {
+            assert.ok(typeof context.createPanner == "function");
+            done();
+        });
+        it(".resume should iterate through the event lists", function (done) {
+            var g = context.createGain(),
+                t = 0;
+            g.gain.setValueAtTime(-1, t += 1);
+            g.gain.setValueAtTime(1, t += 1);
+            g.gain.setValueAtTime(0, t += 1);
+            context.resume().then(function () {
+                assert.equal(context.currentTime, t);
+                assert.equal(g.gain.value, 0.0);
+                done();
+            });
+        });
     });
     describe("AudioNode", function () {
         var node;
@@ -100,12 +116,31 @@ describe("Statics", function () {
             assert.ok(node.value === node.defaultValue);
             done();
         });
-        it("should have setValueAtTime", function (done) {
-            assert.ok(node.setValueAtTime);
+        it("setValueAtTime should add an event which can be executed", function (done) {
+            var t = context.currentTime + 1,
+                v = node.value * -1;
+            node.setValueAtTime(v, t);
+            context.moveToNextEvent();
+            assert.equal(context.currentTime, t);
+            assert.equal(node.value, v);
             done();
         });
-        it("should have linearRampToValueAtTime", function (done) {
-            assert.ok(node.linearRampToValueAtTime);
+        it("linearRampToValueAtTime should add an event which can be executed", function (done) {
+            var t = context.currentTime + 1,
+                v = node.value * -1;
+            node.linearRampToValueAtTime(v, t);
+            context.moveToNextEvent();
+            assert.equal(context.currentTime, t);
+            assert.equal(node.value, v);
+            done();
+        });
+        it("exponentialRampToValueAtTime should add an event which can be executed", function (done) {
+            var t = context.currentTime + 1,
+                v = node.value * -1;
+            node.exponentialRampToValueAtTime(v, t);
+            context.moveToNextEvent();
+            assert.equal(context.currentTime, t);
+            assert.equal(node.value, v);
             done();
         });
         it("should have exponentialRampToValueAtTime", function (done) {
@@ -444,6 +479,14 @@ describe("Nodes", function () {
             }
             node.onaudioprocess = test;
             node.process();
+            done();
+        });
+    });
+    describe("PannerNode", function () {
+        var node;
+        it("context.createPanner should create a PannerNode", function (done) {
+            node = context.createPanner();
+            assert.ok(node.constructor === sandbox.PannerNode);
             done();
         });
     });

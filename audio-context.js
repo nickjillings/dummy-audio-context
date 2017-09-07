@@ -139,6 +139,12 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
 var AudioParam = function (node, defaultValue, minValue, maxValue) {
     var value = defaultValue;
 
+    function SetValueEvent(param, v) {
+        this.execute = function () {
+            param.value = v;
+        };
+    }
+
     function vt(v, t) {
         if (v === undefined || t === undefined) {
             throw ("Not enough arguments to AudioParam.setTargetAtTime.");
@@ -146,6 +152,7 @@ var AudioParam = function (node, defaultValue, minValue, maxValue) {
         if (typeof v !== "number" || typeof t !== "number") {
             throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
         }
+        node.context.addEvent(new SetValueEvent(this, v), t);
         return this;
     }
     Object.defineProperties(this, {
@@ -196,7 +203,6 @@ var AudioParam = function (node, defaultValue, minValue, maxValue) {
                 if (typeof v !== "number" || typeof s !== "number" || typeof t !== "number") {
                     throw ("TypeError: Value being assigned to AudioParam.value is not a finite floating-point value.");
                 }
-                return this;
             }
         },
         "setValueCurveAtTime": {
@@ -484,11 +490,207 @@ var ScriptProcessorNode = function (context, bufferSize, inputChannels, outputCh
     });
 }
 
+var PannerNode = function (context) {
+    var PannerCoordinates = function (x, y, z) {
+        Object.defineProperties(this, {
+            "x": {
+                "get": function () {
+                    return x;
+                },
+                "set": function (v) {
+                    if (typeof v != "number") {
+                        throw ("Non-finite argument passed")
+                    }
+                    x = v;
+                    return x;
+                }
+            },
+            "y": {
+                "get": function () {
+                    return y;
+                },
+                "set": function (v) {
+                    if (typeof v != "number") {
+                        throw ("Non-finite argument passed")
+                    }
+                    y = v;
+                    return y;
+                }
+            },
+            "z": {
+                "get": function () {
+                    return z;
+                },
+                "set": function (v) {
+                    if (typeof v != "number") {
+                        throw ("Non-finite argument passed")
+                    }
+                    z = v;
+                    return z;
+                }
+            }
+        })
+    }
+    var panningModel = "equalpower",
+        distanceModel = "inverse",
+        coneInnerAngle = 360,
+        coneOuterAngle = 360,
+        coneOuterGain = 0,
+        maxDistance = 10000,
+        refDistance = 1,
+        rolloffFactor = 1,
+        orientation = new PannerCoordinates(1, 0, 0),
+        position = new PannerCoordinates(0, 0, 0),
+        velocity = new PannerCoordinates(0, 0, 0);
+    AudioNode.call(this, 2, 1, 1);
+    Object.defineProperties(this, {
+        "panningModel": {
+            "get": function () {
+                return panningModel;
+            },
+            "set": function (t) {
+                if (typeof t !== "string") {
+                    throw ("Invalid Type. Must be a string");
+                }
+                if (t == "equalpower" || t == "HRTF") {
+                    panningModel = t;
+                    return t;
+                }
+                throw ("Invalid Model Type");
+            }
+        },
+        "distanceModel": {
+            "get": function () {
+                return distanceModel;
+            },
+            "set": function (t) {
+                if (typeof t !== "string") {
+                    throw ("Invalid Type. Must be a string");
+                }
+                if (t == "linear" || t == "inverse" || t == "exponential") {
+                    distanceModel = t;
+                    return t;
+                }
+                throw ("Invalid Model Type");
+            }
+        },
+        "coneInnerAngle": {
+            "get": function () {
+                return coneInnerAngle;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Non-finite value passed");
+                }
+                coneInnerAngle = (v % 360);
+                return coneInnerAngle;
+            }
+        },
+        "coneOuterAngle": {
+            "get": function () {
+                return coneOuterAngle;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Non-finite value passed");
+                }
+                coneOuterAngle = (v % 360);
+                return coneOuterAngle;
+            }
+        },
+        "coneOuterGain": {
+            "get": function () {
+                return coneOuterGain;
+            },
+            "set": function (v) {
+                if (typeof v != "number") {
+                    throw ("Non-finite value passed");
+                }
+                if (v < 0 || v > 1) {
+                    throw ("InvalidStateError");
+                }
+                coneOuterGain = v;
+                return coneOuterGain;
+            }
+        },
+        "maxDistance": {
+            "get": function () {
+                return maxDistance;
+            },
+            "set": function (d) {
+                if (typeof d != "number") {
+                    throw ("Non- finite value passed");
+                }
+                if (d < 0) {
+                    throw ("InvalidStateError");
+                }
+                maxDistance = d;
+                return maxDistance;
+            }
+        },
+        "refDistance": {
+            "get": function () {
+                return refDistance;
+            },
+            "set": function (d) {
+                if (typeof d != "number") {
+                    throw ("Non-finite value passed");
+                }
+                if (d < 0) {
+                    throw ("InvalidStateError");
+                }
+                refDistance = d;
+                return refDistance;
+            }
+        },
+        "rolloffFactor": {
+            "get": function () {
+                return rolloffFactor;
+            },
+            "set": function (d) {
+                if (typeof d != "number") {
+                    throw ("Non-finite value passed");
+                }
+                if (d < 0) {
+                    throw ("InvalidStateError");
+                }
+                rolloffFactor = d;
+                return rolloffFactor;
+            }
+        },
+        "setOrientation": function (x, y, z) {
+            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                throw ("Invalid parameter types");
+            }
+            orientation.x = x;
+            orientation.y = y;
+            orientation.z = z;
+        },
+        "setPosition": function (x, y, z) {
+            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                throw ("Invalid parameter types");
+            }
+            position.x = x;
+            position.y = y;
+            position.z = z;
+        },
+        "setVelocity": function (x, y, z) {
+            if (typeof y != "number" || typeof x !== "number" || typeof z != "number") {
+                throw ("Invalid parameter types");
+            }
+            velocity.x = x;
+            velocity.y = y;
+            velocity.z = z;
+        }
+    });
+}
+
 var AudioContext = function (sampleRate) {
     var state = "suspended",
         destination = new AudioNode(this, 2, 1, 0),
         currentTime = 0,
-        onstatechangecallback = function () {};
+        onstatechangecallback = function () {},
+        events = [];
 
     function onstatechange() {
         var e = new Event();
@@ -529,7 +731,11 @@ var AudioContext = function (sampleRate) {
                 return new Promise(function (resolve, reject) {
                     state = "running";
                     resolve();
-                });
+                }).then(function () {
+                    while (events.length > 0) {
+                        this.moveToNextEvent();
+                    }
+                }.bind(this));
             }
         },
         "close": {
@@ -600,6 +806,48 @@ var AudioContext = function (sampleRate) {
         "createScriptProcessor": {
             "value": function (bufferSize, numberOfInputChannels, numberOfOutputChannels) {
                 return new ScriptProcessorNode(this, bufferSize, numberOfInputChannels, numberOfOutputChannels);
+            }
+        },
+        "createPanner": {
+            "value": function () {
+                return new PannerNode(this);
+            }
+        },
+        "addEvent": {
+            "value": function (e, time) {
+                events.push({
+                    event: e,
+                    time: time
+                });
+                events = events.sort(function (a, b) {
+                    if (a.time > b.time) {
+                        return 1;
+                    } else if (a.time < b.time) {
+                        return -1;
+                    }
+                    return 0;
+                });
+                return e;
+            }
+        },
+        "removeEvent": {
+            "value": function (e) {
+                var i = events.findIndex(function (a) {
+                    return a === e;
+                });
+                if (i >= 0) {
+                    events.splice(i, 1);
+                    return;
+                }
+                throw ("Event not found");
+            }
+        },
+        "moveToNextEvent": {
+            "value": function () {
+                var e = events[0];
+                currentTime = e.time;
+                e.event.execute();
+                this.removeEvent(e);
             }
         }
     });
