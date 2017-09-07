@@ -71,6 +71,10 @@ describe("Statics", function () {
             assert.ok(typeof context.createStereoPanner == "function");
             done();
         });
+        it("should have a .createConvolver()", function (done) {
+            assert.ok(typeof context.createConvolver == "function");
+            done();
+        });
         it(".resume should iterate through the event lists", function (done) {
             var g = context.createGain(),
                 t = 0;
@@ -597,6 +601,49 @@ describe("Nodes", function () {
         it("node.pan should have a value of 0", function (done) {
             assert.equal(node.pan.value, 0);
             done();
+        });
+    });
+    describe("ConvolverNode", function () {
+        var node;
+        it("context.createConvolver should return a ConvolverNode", function (done) {
+            node = context.createConvolver();
+            assert.ok(node.constructor === sandbox.ConvolverNode);
+            done();
+        });
+        it("ConvolverNode.buffer should be null", function (done) {
+            assert.equal(node.buffer, null);
+            done();
+        });
+        it("ConvolverNode.normalise should be false", function (done) {
+            assert.equal(node.normalise, false);
+            done();
+        });
+        it("should accept a buffer with 1 channel", function (done) {
+            var buffer = context.createBuffer(1, 1024, context.sampleRate);
+            node.buffer = buffer;
+            assert.ok(node.buffer === buffer);
+            done();
+        });
+        it("should accept a buffer with 2 channels", function (done) {
+            var buffer = context.createBuffer(2, 1024, context.sampleRate);
+            node.buffer = buffer;
+            assert.ok(node.buffer === buffer);
+            done();
+        });
+        it("should accept a buffer with 4 channels", function (done) {
+            var buffer = context.createBuffer(4, 1024, context.sampleRate);
+            node.buffer = buffer;
+            assert.ok(node.buffer === buffer);
+            done();
+        });
+        it("should not accept a buffer with 3 channels", function (done) {
+            var buffer = context.createBuffer(3, 1024, context.sampleRate);
+            try {
+                node.buffer = buffer;
+            } catch (e) {
+                assert.equal(node.buffer, null);
+                done();
+            }
         });
     });
 });

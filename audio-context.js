@@ -729,7 +729,49 @@ var StereoPannerNode = function (context) {
             "value": pan
         }
     });
-}
+};
+
+var ConvolverNode = function (context) {
+    AudioNode.call(this, context, 2, 1, 1);
+    var buffer = null,
+        normalise = false;
+
+    function setBuffer(b) {
+        if (b.numberOfChannels != 1 && b.numberOfChannels != 2 && b.numberOfChannels != 4) {
+            buffer = null;
+            throw ("NotSupportedError");
+        }
+        if (b.sampleRate != context.sampleRate) {
+            buffer = null;
+            throw ("NotSupportedError");
+        }
+        buffer = b;
+    }
+
+    Object.defineProperties(this, {
+        "buffer": {
+            "get": function () {
+                return buffer;
+            },
+            "set": function (b) {
+                if (b.constructor === AudioBuffer) {
+                    setBuffer(b);
+                }
+                return buffer;
+            }
+        },
+        "normalise": {
+            "get": function () {
+                return normalise;
+            },
+            "set": function (t) {
+                normalise = (t === true);
+                return normalise;
+            }
+        }
+    });
+};
+
 
 var AudioContext = function (sampleRate) {
     var state = "suspended",
@@ -867,6 +909,11 @@ var AudioContext = function (sampleRate) {
         "createStereoPanner": {
             "value": function () {
                 return new StereoPannerNode(this);
+            }
+        },
+        "createConvolver": {
+            "value": function () {
+                return new ConvolverNode(this);
             }
         },
         "addEvent": {
