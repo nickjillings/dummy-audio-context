@@ -452,7 +452,7 @@ var AudioBufferSourceNode = function (context) {
 };
 
 var ScriptProcessorNode = function (context, bufferSize, inputChannels, outputChannels) {
-    AudioNode.call(this, Math.max(inputChannels, outputChannels), 1, 1);
+    AudioNode.call(this, context, Math.max(inputChannels, outputChannels), 1, 1);
     var AudioProcessingEvent = function (context, bufferSize, inputChannels, outputChannels) {
         Object.defineProperties(this, {
             "inputBuffer": {
@@ -542,7 +542,7 @@ var PannerNode = function (context) {
         orientation = new PannerCoordinates(1, 0, 0),
         position = new PannerCoordinates(0, 0, 0),
         velocity = new PannerCoordinates(0, 0, 0);
-    AudioNode.call(this, 2, 1, 1);
+    AudioNode.call(this, context, 2, 1, 1);
     Object.defineProperties(this, {
         "panningModel": {
             "get": function () {
@@ -691,6 +691,46 @@ var PannerNode = function (context) {
     });
 };
 
+var SpatialPannerNode = function (context) {
+    PannerNode.call(this, context);
+    var pX = new AudioParam(0, -Infinity, Infinity),
+        pY = new AudioParam(0, -Infinity, Infinity),
+        pZ = new AudioParam(0, -Infinity, Infinity),
+        oX = new AudioParam(0, -Infinity, Infinity),
+        oY = new AudioParam(0, -Infinity, Infinity),
+        oZ = new AudioParam(0, -Infinity, Infinity);
+    Object.defineProperties(this, {
+        "positionX": {
+            "value": pX
+        },
+        "positionY": {
+            "value": pY
+        },
+        "positionZ": {
+            "value": pZ
+        },
+        "orientationX": {
+            "value": oX
+        },
+        "orientationY": {
+            "value": oY
+        },
+        "orientationZ": {
+            "value": oZ
+        }
+    });
+};
+
+var StereoPannerNode = function (context) {
+    AudioNode.call(this, context, 2, 1, 1);
+    var pan = new AudioParam(this, 0, -1, +1);
+    Object.defineProperties(this, {
+        "pan": {
+            "value": pan
+        }
+    });
+}
+
 var AudioContext = function (sampleRate) {
     var state = "suspended",
         destination = new AudioNode(this, 2, 1, 0),
@@ -817,6 +857,16 @@ var AudioContext = function (sampleRate) {
         "createPanner": {
             "value": function () {
                 return new PannerNode(this);
+            }
+        },
+        "createSpatialPanner": {
+            "value": function () {
+                return new SpatialPannerNode(this);
+            }
+        },
+        "createStereoPanner": {
+            "value": function () {
+                return new StereoPannerNode(this);
             }
         },
         "addEvent": {

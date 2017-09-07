@@ -63,6 +63,14 @@ describe("Statics", function () {
             assert.ok(typeof context.createPanner == "function");
             done();
         });
+        it("should have a .createSpatialPanner()", function (done) {
+            assert.ok(typeof context.createSpatialPanner == "function");
+            done();
+        });
+        it("should have a .createStereoPanner()", function (done) {
+            assert.ok(typeof context.createStereoPanner == "function");
+            done();
+        });
         it(".resume should iterate through the event lists", function (done) {
             var g = context.createGain(),
                 t = 0;
@@ -531,6 +539,63 @@ describe("Nodes", function () {
         });
         it("should have setVelocity", function (done) {
             assert.ok(node.setVelocity);
+            done();
+        });
+    });
+    describe("SpatialPannerNode", function () {
+        var node;
+        it("context.createPanner should create a SpatialPannerNode", function (done) {
+            node = context.createSpatialPanner();
+            assert.ok(node.constructor === sandbox.SpatialPannerNode);
+            assert.ok(node.context === context);
+            done();
+        });
+        it("should have a panning model of \"equalpower\"", function (done) {
+            assert.equal(node.panningModel, "equalpower");
+            done();
+        });
+        it("should have a distance model of \"inverse\"", function (done) {
+            assert.equal(node.distanceModel, "inverse");
+            done();
+        });
+        it("should have coneInnerAngle", function (done) {
+            assert.ok(node.coneInnerAngle);
+            done();
+        });
+        it("should have coneOuterAngle", function (done) {
+            assert.ok(node.coneOuterAngle);
+            done();
+        });
+        it("should have coneOuterGain", function (done) {
+            assert.ok(node.coneOuterGain !== undefined);
+            done();
+        });
+        it("should have maxDistance", function (done) {
+            assert.ok(node.maxDistance);
+            done();
+        });
+        it("should have refDistance", function (done) {
+            assert.ok(node.refDistance);
+            done();
+        });
+        it("should have rolloffFactor", function (done) {
+            assert.ok(node.rolloffFactor);
+            done();
+        });
+    });
+    describe("StereoPannerNode", function () {
+        var node;
+        it("context.createStereoPanner should return a StereoPannerNode", function (done) {
+            node = context.createStereoPanner();
+            assert.ok(node.constructor === sandbox.StereoPannerNode);
+            done();
+        });
+        it("StereoPannerNode should have an AudioParam called pan", function (done) {
+            assert.ok(node.pan.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("node.pan should have a value of 0", function (done) {
+            assert.equal(node.pan.value, 0);
             done();
         });
     });
