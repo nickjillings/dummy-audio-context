@@ -1047,6 +1047,11 @@ var AudioContext = function (sampleRate) {
                 return new ConvolverNode(this);
             }
         },
+        "createAnalyser": {
+            "value": function () {
+                return new AnalyserNode(this);
+            }
+        },
         "addEvent": {
             "value": function (e, time) {
                 events.push({

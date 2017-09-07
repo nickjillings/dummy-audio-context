@@ -75,6 +75,10 @@ describe("Statics", function () {
             assert.ok(typeof context.createConvolver == "function");
             done();
         });
+        it("should have a .createAnalyser()", function (done) {
+            assert.ok(typeof context.createAnalyser == "function");
+            done();
+        });
         it(".resume should iterate through the event lists", function (done) {
             var g = context.createGain(),
                 t = 0;
@@ -644,6 +648,38 @@ describe("Nodes", function () {
                 assert.equal(node.buffer, null);
                 done();
             }
+        });
+    });
+    describe("AnalyserNode", function () {
+        var node;
+        it("context.createAnalyser should return an AnalyserNode", function (done) {
+            node = context.createAnalyser();
+            assert.ok(node.constructor === sandbox.AnalyserNode);
+            done();
+        });
+        it("should have an fftSize of 2048", function (done) {
+            assert.equal(node.fftSize, 2048);
+            done();
+        });
+        it("should have a frequencyBinCount of half the fftSize", function (done) {
+            assert.equal(node.frequencyBinCount, node.fftSize / 2);
+            done();
+        });
+        it("should have .getByteFrequencyData", function (done) {
+            assert.ok(node.getByteFrequencyData);
+            done();
+        });
+        it("should have .getByteTimeDomainData", function (done) {
+            assert.ok(node.getByteTimeDomainData);
+            done();
+        });
+        it("should have .getFloatFrequencyData", function (done) {
+            assert.ok(node.getFloatFrequencyData);
+            done();
+        });
+        it("should have .getFloatTimeDomainData", function (done) {
+            assert.ok(node.getFloatTimeDomainData);
+            done();
         });
     });
 });
