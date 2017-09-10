@@ -79,6 +79,38 @@ describe("Statics", function () {
             assert.ok(typeof context.createAnalyser == "function");
             done();
         });
+        it("should have a .createChannelSplitter()", function (done) {
+            assert.ok(typeof context.createChannelSplitter == "function");
+            done();
+        });
+        it("should have a .createChannelMerger()", function (done) {
+            assert.ok(typeof context.createChannelMerger == "function");
+            done();
+        });
+        it("should have a .createDynamicsCompressor()", function (done) {
+            assert.ok(typeof context.createDynamicsCompressor == "function");
+            done();
+        });
+        it("should have a .createBiquadFilter", function (done) {
+            assert.ok(typeof context.createBiquadFilter == "function");
+            done();
+        });
+        it("should have a .createIIRFilter", function (done) {
+            assert.ok(typeof context.createIIRFilter == "function");
+            done();
+        });
+        it("should have a .createWaveShaper", function (done) {
+            assert.ok(typeof context.createWaveShaper == "function");
+            done();
+        });
+        it("should have a .createOscillator", function (done) {
+            assert.ok(typeof context.createOscillator == "function");
+            done();
+        });
+        it("should have a .createPeriodicWave", function (done) {
+            assert.ok(typeof context.createPeriodicWave == "function");
+            done();
+        });
         it(".resume should iterate through the event lists", function (done) {
             var g = context.createGain(),
                 t = 0;
@@ -679,6 +711,200 @@ describe("Nodes", function () {
         });
         it("should have .getFloatTimeDomainData", function (done) {
             assert.ok(node.getFloatTimeDomainData);
+            done();
+        });
+    });
+    describe("ChannelSplitterNode", function () {
+        var node;
+        it("context.createChannelSplitter should return a ChannelSplitterNode", function (done) {
+            node = context.createChannelSplitter();
+            assert.ok(node.constructor === sandbox.ChannelSplitterNode);
+            done();
+        });
+    });
+    describe("ChannelMergerNode", function () {
+        var node;
+        it("context.createChannelMerger should return a ChannelMergerNode", function (done) {
+            node = context.createChannelMerger();
+            assert.ok(node.constructor === sandbox.ChannelMergerNode);
+            done();
+        });
+    });
+    describe("DynamicsCompressorNode", function () {
+        var node;
+        it("context.createDynamicsCompressor should return a DynamicsCompressorNode", function (done) {
+            node = context.createDynamicsCompressor();
+            assert.ok(node.constructor === sandbox.DynamicsCompressorNode);
+            done();
+        });
+        it("should have an AudioParam called threshold", function (done) {
+            assert.ok(node.threshold.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called knee", function (done) {
+            assert.ok(node.knee.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called ratio", function (done) {
+            assert.ok(node.ratio.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called attack", function (done) {
+            assert.ok(node.attack.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called release", function (done) {
+            assert.ok(node.release.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have a parameter called reduction", function (done) {
+            assert.equal(typeof node.reduction, "number");
+            done();
+        });
+    });
+    describe("BiquadFilterNode", function () {
+        var node;
+        it("context.createBiquadFilter should return a BiquadFilterNode", function (done) {
+            node = context.createBiquadFilter();
+            assert.ok(node.constructor === sandbox.BiquadFilterNode);
+            done();
+        });
+        it("should have an AudioParam called frequency", function (done) {
+            assert.ok(node.frequency.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called detune", function (done) {
+            assert.ok(node.detune.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called Q", function (done) {
+            assert.ok(node.Q.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called gain", function (done) {
+            assert.ok(node.gain.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have a parameter called type", function (done) {
+            assert.equal(typeof node.type, "string");
+            done();
+        });
+        it("should have a method called .getFrequencyResponse", function (done) {
+            assert.equal(typeof node.getFrequencyResponse, "function");
+            done();
+        });
+        it(".getFrequencyResponse should return information", function (done) {
+            var freqs = new Float32Array(128),
+                mag = new Float32Array(128),
+                phase = new Float32Array(128);
+            for (var i = 0; i < 128; i++) {
+                freqs[i] = context.sampleRate / (256 - i);
+            }
+            node.getFrequencyResponse(freqs, mag, phase);
+            assert.ok(mag.reduce(function (a, b) {
+                return a + b;
+            }, 0) != 0);
+            done();
+        });
+    });
+    describe("IIRFilterNode", function () {
+        var node;
+        it("context.createIIRFilter should return a IIRFilterNode", function (done) {
+            var a = [1, 0, 0],
+                b = [0.707, -0.707, 0.707];
+            node = context.createIIRFilter(b, a);
+            assert.ok(node.constructor === sandbox.IIRFilterNode);
+            done();
+        });
+        it(".getFrequencyResponse should return information", function (done) {
+            var freqs = new Float32Array(128),
+                mag = new Float32Array(128),
+                phase = new Float32Array(128);
+            for (var i = 0; i < 128; i++) {
+                freqs[i] = context.sampleRate / (256 - i);
+            }
+            node.getFrequencyResponse(freqs, mag, phase);
+            assert.ok(mag.reduce(function (a, b) {
+                return a + b;
+            }, 0) != 0);
+            done();
+        });
+    });
+    describe("WaveShaperNode", function () {
+        var node;
+        it("context.createWaveShaper should return a WaveShaperNode", function (done) {
+            node = context.createWaveShaper();
+            assert.ok(node.constructor === sandbox.WaveShaperNode);
+            done();
+        });
+        it("should have a parameter 'oversample' set to 'none'", function (done) {
+            assert.equal(node.oversample, "none");
+            done();
+        });
+        it("should have a parameter 'curve' set to null", function (done) {
+            assert.equal(node.curve, null);
+            done();
+        });
+        it("should have a setter for 'oversample'", function (done) {
+            node.oversample = "4x";
+            assert.equal(node.oversample, "4x");
+            node.oversample = "2x";
+            assert.equal(node.oversample, "2x");
+            node.oversample = "none";
+            assert.equal(node.oversample, "none");
+            done();
+        });
+        it("should have a setter for 'curve'", function (done) {
+            var curve = new Float32Array(128);
+            node.curve = curve;
+            for (var i = 0; i < curve.length; i++) {
+                assert.equal(node.curve[i], curve[i]);
+            }
+            done();
+        });
+    });
+    describe("OscillatorNode", function () {
+        var node;
+        it("context.createOscillator should return a OscillatorNode", function (done) {
+            node = context.createOscillator();
+            assert.ok(node.constructor === sandbox.OscillatorNode);
+            done();
+        });
+        it("should have an AudioParam called detune", function (done) {
+            assert.ok(node.detune.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have an AudioParam called frequency", function (done) {
+            assert.ok(node.frequency.constructor === sandbox.AudioParam);
+            done();
+        });
+        it("should have a parameter called type which is sine", function (done) {
+            assert.equal(node.type, "sine");
+            done();
+        });
+        it("should have a parameter called type with a setter", function (done) {
+            node.type = "square";
+            assert.equal(node.type, "square");
+            node.type = "triangle";
+            assert.equal(node.type, "triangle");
+            done();
+        });
+        it("should have a start function", function (done) {
+            assert.ok(typeof node.start == "function");
+            done();
+        });
+        it("should have a stop function", function (done) {
+            assert.ok(typeof node.stop == "function");
+            done();
+        });
+    });
+    describe("PeriodicWave", function () {
+        var node;
+        it("context.createPeriodicWave should return a PeriodicWave", function (done) {
+            var a = [1, 0, 0],
+                b = [0.707, -0.707, 0.707];
+            node = context.createPeriodicWave(b, a);
+            assert.ok(node.constructor === sandbox.PeriodicWave);
             done();
         });
     });

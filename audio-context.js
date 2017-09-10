@@ -1,4 +1,11 @@
 /*globals DOMException, Float32Array, Event, Promise, ArrayBuffer, math */
+
+function SetValueEvent(param, v) {
+    this.execute = function () {
+        param.value = v;
+    };
+}
+
 var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
     var connectionMap = [],
         channelCountMode = "max",
@@ -138,12 +145,6 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
 
 var AudioParam = function (node, defaultValue, minValue, maxValue) {
     var value = defaultValue;
-
-    function SetValueEvent(param, v) {
-        this.execute = function () {
-            param.value = v;
-        };
-    }
 
     function vt(v, t) {
         if (v === undefined || t === undefined) {
@@ -904,6 +905,295 @@ var AnalyserNode = function (context) {
     });
 };
 
+var ChannelSplitterNode = function (context) {
+    AudioNode.call(this, context, 6, 1, 6);
+};
+
+var ChannelMergerNode = function (context) {
+    AudioNode.call(this, context, 6, 6, 1);
+};
+
+var DynamicsCompressorNode = function (context) {
+    AudioNode.call(this, context, 2, 1, 1);
+    var attack = new AudioParam(this, 0.003, 0, 1),
+        knee = new AudioParam(this, 30, 0, 40),
+        ratio = new AudioParam(this, 12, 1, 20),
+        reduction = 0,
+        release = new AudioParam(this, 0.25, 0, 1),
+        threshold = new AudioParam(this, -24, -100, 0);
+
+    Object.defineProperties(this, {
+        "attack": {
+            "value": attack
+        },
+        "knee": {
+            "value": knee
+        },
+        "ratio": {
+            "value": ratio
+        },
+        "release": {
+            "value": release
+        },
+        "threshold": {
+            "value": threshold
+        },
+        "reduction": {
+            "get": function () {
+                return reduction;
+            },
+            "set": function () {
+                throw ("Cannot set readonly variable");
+            }
+        }
+    });
+};
+
+var BiquadFilterNode = function (context) {
+    AudioNode.call(this, context, 2, 1, 1);
+    var frequency = new AudioParam(this, 350, 10, context.sampleRate / 2),
+        detune = new AudioParam(this, 0, -Infinity, +Infinity),
+        Q = new AudioParam(this, 1, 0.0001, 1000),
+        gain = new AudioParam(this, 0, -40, 40),
+        types = ["lowpass", "highpass", "bandpass", "lowshelf", "highshelf", "peaking", "notch", "allpass"],
+        type = 0;
+
+    Object.defineProperties(this, {
+        "frequency": {
+            "value": frequency
+        },
+        "detune": {
+            "value": detune
+        },
+        "Q": {
+            "value": Q
+        },
+        "gain": {
+            "value": gain
+        },
+        "type": {
+            "get": function () {
+                return types[type];
+            },
+            "set": function (s) {
+                if (typeof s !== "string" || s.length == 0) {
+                    throw ("Invalid arguments passed");
+                }
+                var i = types.findIndex(function (a) {
+                    return a == s;
+                });
+                if (i == -1) {
+                    throw ("Type not defined");
+                }
+                type = i;
+                return types[type];
+            }
+        },
+        "getFrequencyResponse": {
+            "value": function (frequencyHz, magResponse, phaseResponse) {
+                if (frequencyHz === undefined || magResponse === undefined || phaseResponse === undefined) {
+                    throw ("InvalidAccessError");
+                }
+                if (frequencyHz.length != magResponse.length || magResponse.length != phaseResponse.length) {
+                    throw ("InvalidAccessError");
+                }
+                var N = frequencyHz.length;
+                for (n = 0; n < N; n++) {
+                    if (frequencyHz[n] < 0 || frequencyHz[n] > context.sampleRate / 2) {
+                        magResponse[n] = phaseResponse[n] = NaN;
+                    } else {
+                        magResponse[n] = Math.random() * (-40);
+                        phaseResponse[n] = (Math.random() * (2 * Math.PI)) - Math.PI;
+                    }
+                }
+            }
+        }
+    });
+};
+
+var IIRFilterNode = function (context, feedforward, feedback) {
+    var N = Math.max(feedforward.length, feedback.length),
+        a = new Float32Array(N),
+        b = new Float32Array(N);
+
+    for (var n = 0; n < feedforward.length; n++) {
+        b[n] = feedforward[n];
+    }
+    for (var n = 0; n < feedback.length; n++) {
+        a[n] = feedback[n];
+    }
+
+    Object.defineProperties(this, {
+        "getFrequencyResponse": {
+            "value": function (frequencyHz, magResponse, phaseResponse) {
+                if (frequencyHz === undefined || magResponse === undefined || phaseResponse === undefined) {
+                    throw ("InvalidAccessError");
+                }
+                if (frequencyHz.length != magResponse.length || magResponse.length != phaseResponse.length) {
+                    throw ("InvalidAccessError");
+                }
+                var N = frequencyHz.length;
+                for (n = 0; n < N; n++) {
+                    if (frequencyHz[n] < 0 || frequencyHz[n] > context.sampleRate / 2) {
+                        magResponse[n] = phaseResponse[n] = NaN;
+                    } else {
+                        magResponse[n] = Math.random() * (-40);
+                        phaseResponse[n] = (Math.random() * (2 * Math.PI)) - Math.PI;
+                    }
+                }
+            }
+        }
+    });
+};
+
+var WaveShaperNode = function (context) {
+    var oversample = "none",
+        curve = null;
+    Object.defineProperties(this, {
+        "curve": {
+            "get": function () {
+                return curve;
+            },
+            "set": function (v) {
+                if (v.length === undefined) {
+                    throw ("InvalidStateError 1");
+                }
+                if (v.length < 2) {
+                    throw ("InvalidStateError 2");
+                }
+                curve = new Float32Array(v.length);
+                v.forEach(function (e, i) {
+                    curve[i] = e;
+                });
+                return curve;
+            }
+        },
+        "oversample": {
+            "get": function () {
+                return oversample;
+            },
+            "set": function (t) {
+                switch (t) {
+                    case "none":
+                        oversample = "none";
+                        break;
+                    case "2x":
+                        oversample = "2x";
+                        break;
+                    case "4x":
+                        oversample = "4x";
+                        break;
+                    default:
+                        throw ("InvalidStateError");
+                }
+            }
+        }
+    });
+};
+
+var OscillatorNode = function (context) {
+    AudioNode.call(this, context, 1, 0, 1);
+    var detune = new AudioParam(this, 0, -Infinity, Infinity),
+        frequency = new AudioParam(this, 440, -Infinity, Infinity),
+        onended = undefined,
+        type = "sine",
+        state = 0;
+
+    function StartEvent(node, time) {
+        this.execute = function () {
+            node.start(0);
+        }
+    }
+
+    function StopEvent(node, time) {
+        this.execute = function () {
+            node.stop(0);
+        }
+    }
+
+    Object.defineProperties(this, {
+        "detune": {
+            "value": detune
+        },
+        "frequency": {
+            "value": frequency
+        },
+        "type": {
+            "get": function () {
+                return type;
+            },
+            "set": function (t) {
+                switch (t) {
+                    case "sine":
+                    case "square":
+                    case "sawtooth":
+                    case "triangle":
+                    case "custom":
+                        type = t;
+                        break;
+                    default:
+                        throw ("InvalidStateError");
+                }
+            }
+        },
+        "onended": {
+            "get": function () {
+                return onended;
+            },
+            "set": function (f) {
+                if (typeof f != "function") {
+                    throw ("InvalidStateError");
+                }
+                oneded = f;
+            }
+        },
+        "start": {
+            "value": function (when) {
+                if (state != 0) {
+                    throw ("InvalidStateError");
+                }
+                if (typeof when != "number") {
+                    when = context.currentTime;
+                }
+                if (when > context.currentTime) {
+                    context.addEvent(new StartEvent(this, when), when);
+                } else {
+                    state = 1;
+                }
+            }
+        },
+        "stop": {
+            "value": function (when) {
+                if (state != 1) {
+                    throw ("InvalidStateError");
+                }
+                if (typeof when != "number") {
+                    when = context.currentTime;
+                }
+                if (when > context.currentTime) {
+                    context.addEvent(new StopEvent(this, when), when);
+                } else {
+                    if (onended) {
+                        onended.call(window);
+                    }
+                    state = 2;
+                }
+            }
+        }
+    });
+};
+
+var PeriodicWave = function (context, r, i, constraints) {
+    var real = new Float32Array(r.length),
+        imag = new Float32Array(i.length);
+    r.forEach(function (a, i) {
+        real[i] = a;
+    });
+    i.forEach(function (a, i) {
+        imag[i] = a;
+    });
+}
+
 var AudioContext = function (sampleRate) {
     var state = "suspended",
         destination = new AudioNode(this, 2, 1, 0),
@@ -1050,6 +1340,58 @@ var AudioContext = function (sampleRate) {
         "createAnalyser": {
             "value": function () {
                 return new AnalyserNode(this);
+            }
+        },
+        "createChannelSplitter": {
+            "value": function () {
+                return new ChannelSplitterNode(this);
+            }
+        },
+        "createChannelMerger": {
+            "value": function () {
+                return new ChannelMergerNode(this);
+            }
+        },
+        "createDynamicsCompressor": {
+            "value": function () {
+                return new DynamicsCompressorNode(this);
+            }
+        },
+        "createBiquadFilter": {
+            "value": function () {
+                return new BiquadFilterNode(this);
+            }
+        },
+        "createIIRFilter": {
+            "value": function (feedforward, feedback) {
+                if (feedforward === undefined || feedback === undefined) {
+                    throw ("InvalidStateError");
+                }
+                if (feedforward.length == 0 || feedforward.length > 20) {
+                    throw ("NotSupportedError");
+                }
+                if (feedback.length == 0 || feedback.length > 20) {
+                    throw ("NotSupportedError");
+                }
+                return new IIRFilterNode(this, feedforward, feedback);
+            }
+        },
+        "createWaveShaper": {
+            "value": function () {
+                return new WaveShaperNode(this);
+            }
+        },
+        "createOscillator": {
+            "value": function () {
+                return new OscillatorNode(this);
+            }
+        },
+        "createPeriodicWave": {
+            "value": function (real, imag, constraints) {
+                if (real.length === undefined || real.length === 0 || imag.length === undefined || imag.length === 0) {
+                    throw ("InvalidStateError");
+                }
+                return new PeriodicWave(this, real, imag, constraints);
             }
         },
         "addEvent": {
