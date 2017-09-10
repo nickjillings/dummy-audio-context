@@ -102,7 +102,7 @@ var AudioNode = function (context, channels, numberOfInputs, numberOfOutputs) {
                     return new DOMException("IndexSizeError");
                 }
                 if (checkForConnection(destination, output, input) === false) {
-                    throw ("InvalidAccessError: A parameter of an operation is not supported by the underlying object");
+                    return;
                 }
                 removeConnection(destination, output, input);
             }
