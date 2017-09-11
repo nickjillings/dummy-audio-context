@@ -8,5 +8,23 @@
     },
     "scripts": {
         "test": "mocha"
-    }
+    },
+    "main": "audio-context.js",
+    "directories": {
+        "test": "test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/nickjillings/dummy-audio-context.git"
+    },
+    "keywords": [
+    "Web",
+    "Audio",
+    "API"
+  ],
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/nickjillings/dummy-audio-context/issues"
+    },
+    "homepage": "https://github.com/nickjillings/dummy-audio-context"
 }
