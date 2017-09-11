@@ -2,7 +2,7 @@
     "name": "dummy-audio-context",
     "description": "Dummy Web Audio API",
     "author": "Nick Jillings <nicholasjillings@yahoo.co.uk>",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "devDependencies": {
         "mocha": "^3.5.2"
     },
