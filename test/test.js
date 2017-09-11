@@ -4,12 +4,15 @@ var fs = require("fs");
 var sandbox = {
     globalVar: 1
 };
+/*
 vm.createContext(sandbox);
 module.exports = function (path, context) {
     var data = fs.readFileSync(path);
     vm.runInNewContext(data, context, path);
 };
 module.exports('./audio-context.js', sandbox);
+*/
+var sandbox = require("../");
 
 var context = new sandbox.AudioContext();
 
